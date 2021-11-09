@@ -1,35 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+const URL = "https://assets.breatheco.de/apis/fake/todos/user/alesanchezr";
 
 //create your first component
 const TodoList = () => {
 	const [list, setList] = useState([]);
 	const [currentTask, setCurrentTask] = useState("");
 
-	fetch("https://assets.breatheco.de/apis/fake/todos/user/alesanchezr", {
-		method: "GET",
-		headers: {
-			"Content-Type": "application/json"
-		}
-	})
-		.then(resp => {
-			console.log(resp.ok); // will be true if the response is successfull
-			console.log(resp.status); // the status code = 200 or code = 400 etc.
-			console.log(resp.text()); // will try return the exact result as string
-			resp.text().then(value => {
-				console.log("inside-promise");
-				console.log(value);
+	useEffect(() => {
+		fetch(URL, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		})
+			.then(response => {
+				console.log(response);
+				return response.json();
+			})
+			.then(data => {
+				const newList = data;
+				setList(newList);
 			});
-			return "resp.json()"; // (returns promise) will try to parse the result as json as return a promise that you can .then for results
-		})
-		.then(data => {
-			console.log("second then");
-			//here is were your code should start after the fetch finishes
-			console.log(data); //this will print on the console the exact object received from the server
-		})
-		.catch(error => {
-			//error handling
-			console.log(error);
-		});
+	}, []);
 
 	function onkeydown(e) {
 		if (e.key === "Enter") {
@@ -37,9 +30,36 @@ const TodoList = () => {
 		}
 	}
 
+	function actionList(newList) {
+		fetch(URL, {
+			method: 'PUT',
+			mode: "cors",
+			body: JSON.stringify(newList),
+			headers: {
+				"Content-Type": "application/json"
+			}
+		})
+			.then(response => {
+				//console.log(response);
+				if (response.ok) {
+					setList(newList);
+				}
+
+				return response.json();
+				//return response.json();
+			})
+			.then(data => alert(data.result));
+	}
+
 	function addItem() {
-		const newList = [...list, { label: currentTask, done: false }];
-		setList(newList);
+		if (currentTask !== "") {
+			const newItem = { label: currentTask, done: false };
+			const newList = [...list, newItem];
+			/*setList(newList);*/
+			actionList(newList);
+		} else {
+			alert("Rellenar el input");
+		}
 	}
 
 	function toggleStatus(index) {
@@ -55,12 +75,16 @@ const TodoList = () => {
 
 			return item;
 		});
-		setList(newList);
+		actionList(newList);
 	}
 
 	function eliminar(index) {
 		const newList = list.filter((item, key) => key !== index);
-		setList(newList);
+		actionList(newList);
+	}
+
+	function clean() {
+		setList([]);
 	}
 
 	return (
@@ -77,6 +101,9 @@ const TodoList = () => {
 				/>
 				<button type="button" onClick={() => addItem()}>
 					Add
+				</button>
+				<button type="button" onClick={() => clean()}>
+					Clean
 				</button>
 			</div>
 			{list.map((item, index) => (
